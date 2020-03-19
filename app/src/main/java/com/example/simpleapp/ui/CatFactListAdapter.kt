@@ -28,6 +28,11 @@ class CatFactListAdapter(private val endOfListLambda: (Int) -> Unit) : RecyclerV
 
     override fun getItemCount() = dataSet.size
 
+    // To improve
+    // * Very fragile as we have a contract that everyone needs to know about (i send the delta and they will be attached to the end).
+    // * Because of that it is easy to have duplicated elements
+    // * Because of that list is mutable and it shoudln't
+    // * MVI can fix it
     fun addElements(catFacts: List<CatFact>) {
         dataSet.addAll(catFacts)
         notifyDataSetChanged()

@@ -9,6 +9,8 @@ import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.DividerItemDecoration.VERTICAL
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.simpleapp.R
@@ -39,6 +41,7 @@ class CatFactsActivity : AppCompatActivity() {
             setHasFixedSize(true)
             layoutManager = LinearLayoutManager(context)
             adapter = listAdapter
+            addItemDecoration(DividerItemDecoration(context, VERTICAL))
         }
     }
 
@@ -54,6 +57,11 @@ class CatFactsActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         disposables.clear()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        disposables.dispose()
     }
 
     private fun updateUI(state: State) {
@@ -74,7 +82,7 @@ class CatFactsActivity : AppCompatActivity() {
     }
 
     // To improve
-    // * A better way to display errors and not depend on a flag
+    // * A better way to display errors and not depend on a flag. MVI would improve
     private fun showError(errorMessage: String, important: Boolean) {
         if (important) {
             errorView.text = errorMessage
@@ -84,7 +92,6 @@ class CatFactsActivity : AppCompatActivity() {
         } else {
             Toast.makeText(this, errorMessage, LENGTH_SHORT).show()
         }
-
     }
 
     private fun showLoading() {

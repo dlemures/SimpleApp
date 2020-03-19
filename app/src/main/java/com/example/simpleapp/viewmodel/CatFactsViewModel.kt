@@ -16,18 +16,18 @@ class CatFactsViewModel : ViewModel() {
 
     private val catFactRepository = CatFactRepository()
 
-    private val relay = BehaviorRelay.create<State>()
+    private val catFactsRelay = BehaviorRelay.create<State>()
     private val disposables = CompositeDisposable()
 
     init {
         disposables.add(
             catFactRepository.getCatFacts(0, REQUEST_LENGTH)
                 .observeOn(AndroidSchedulers.mainThread())
-                .doOnSubscribe { relay.accept(Loading) }
+                .doOnSubscribe { catFactsRelay.accept(Loading) }
                 .subscribeOn(Schedulers.io())
                 .subscribe(
-                    { catFacts -> relay.accept(Data(catFacts)) },
-                    { throwable -> relay.accept(Error(true, "Cannot load the cat facts", throwable)) }
+                    { catFacts -> catFactsRelay.accept(Data(catFacts)) },
+                    { throwable -> catFactsRelay.accept(Error(true, "Cannot load the cat facts", throwable)) }
                 )
         )
     }
@@ -36,7 +36,7 @@ class CatFactsViewModel : ViewModel() {
         disposables.dispose()
     }
 
-    fun observeCatFacts(): Observable<State> = relay.hide()
+    fun observeCatFacts(): Observable<State> = catFactsRelay.hide()
 
     // To improve
     // * Retry if it fails
@@ -47,8 +47,8 @@ class CatFactsViewModel : ViewModel() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.io())
                 .subscribe(
-                    { catFacts -> relay.accept(Data(catFacts)) },
-                    { throwable -> relay.accept(Error(false, "Cannot load more cat facts", throwable)) }
+                    { catFacts -> catFactsRelay.accept(Data(catFacts)) },
+                    { throwable -> catFactsRelay.accept(Error(false, "Cannot load more cat facts", throwable)) }
                 )
         )
     }
