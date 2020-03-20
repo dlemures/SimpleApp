@@ -1,59 +1,48 @@
 package com.example.simpleapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.example.simpleapp.data.CatFactRepository
-import com.example.simpleapp.model.Data
-import com.example.simpleapp.model.Error
-import com.example.simpleapp.model.Loading
-import com.example.simpleapp.model.State
-import com.jakewharton.rxrelay2.BehaviorRelay
+import com.example.simpleapp.model.Event
+import com.example.simpleapp.model.ScreenLoad
+import com.example.simpleapp.model.ViewState
+import com.jakewharton.rxrelay2.PublishRelay
 import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 
 class CatFactsViewModel : ViewModel() {
 
-    private val catFactRepository = CatFactRepository()
-
-    private val catFactsRelay = BehaviorRelay.create<State>()
+    private val eventEmitter = PublishRelay.create<Event>()
     private val disposables = CompositeDisposable()
 
+    val viewState: Observable<ViewState>
+
     init {
-        disposables.add(
-            catFactRepository.getCatFacts(0, REQUEST_LENGTH)
-                .observeOn(AndroidSchedulers.mainThread())
-                .doOnSubscribe { catFactsRelay.accept(Loading) }
-                .subscribeOn(Schedulers.io())
-                .subscribe(
-                    { catFacts -> catFactsRelay.accept(Data(catFacts)) },
-                    { throwable -> catFactsRelay.accept(Error(true, "Cannot load the cat facts", throwable)) }
-                )
-        )
+        val observable = eventEmitter
+            .observeOn(Schedulers.io())
+            .doOnNext { event -> Log.d(LOG_TAG, "----- event $event") }
+            .eventToActions()
+            .doOnNext { action -> Log.d(LOG_TAG, "----- action $action") }
+            .actionToViewState()
+            .doOnNext { state -> Log.d(LOG_TAG, "----- view state $state") }
+            .replay(1)
+
+        observable.connect { disposables.add(it) }
+        viewState = observable.subscribeOn(Schedulers.io())
+
+        // Initial event
+        sendEvent(ScreenLoad)
     }
 
     override fun onCleared() {
         disposables.dispose()
     }
 
-    fun observeCatFacts(): Observable<State> = catFactsRelay.hide()
-
-    // To improve
-    // * Retry if it fails
-    // * Avoid repeating requests when you scroll crazy at the end of the list
-    fun onEndOfListReached(listSize: Int) {
-        disposables.add(
-            catFactRepository.getCatFacts(listSize, REQUEST_LENGTH)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeOn(Schedulers.io())
-                .subscribe(
-                    { catFacts -> catFactsRelay.accept(Data(catFacts)) },
-                    { throwable -> catFactsRelay.accept(Error(false, "Cannot load more cat facts", throwable)) }
-                )
-        )
+    fun sendEvent(event: Event) {
+        eventEmitter.accept(event)
     }
 
     companion object {
-        private const val REQUEST_LENGTH = 15
+        private const val LOG_TAG = "CatFacts MVI"
     }
 }
